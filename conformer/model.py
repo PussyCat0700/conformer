@@ -90,19 +90,18 @@ class Conformer(nn.Module):
         """ Update dropout probability of model """
         self.encoder.update_dropout(dropout_p)
 
-    def forward(self, inputs: Tensor, input_lengths: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, inputs: Tensor) -> Tuple[Tensor, Tensor]:
         """
         Forward propagate a `inputs` and `targets` pair for training.
 
         Args:
             inputs (torch.FloatTensor): A input sequence passed to encoder. Typically for inputs this will be a padded
                 `FloatTensor` of size ``(batch, seq_length, dimension)``.
-            input_lengths (torch.LongTensor): The length of input tensor. ``(batch)``
 
         Returns:
             * predictions (torch.FloatTensor): Result of model predictions.
         """
-        encoder_outputs, encoder_output_lengths = self.encoder(inputs, input_lengths)
+        encoder_outputs = self.encoder(inputs)
         outputs = self.fc(encoder_outputs)
-        outputs = nn.functional.log_softmax(outputs, dim=-1)
-        return outputs, encoder_output_lengths
+        # log_softmax has been removed because it may cause gradient computation modified by an inplace operation exception.
+        return outputs

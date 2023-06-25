@@ -130,11 +130,9 @@ class ConformerEncoder(nn.Module):
 
     Inputs: inputs, input_lengths
         - **inputs** (batch, time, dim): Tensor containing input vector
-        - **input_lengths** (batch): list of sequence input lengths
 
     Returns: outputs, output_lengths
         - **outputs** (batch, out_channels, time): Tensor produces by conformer encoder.
-        - **output_lengths** (batch): list of sequence output lengths
     """
     def __init__(
             self,
@@ -179,21 +177,19 @@ class ConformerEncoder(nn.Module):
             if isinstance(child, nn.Dropout):
                 child.p = dropout_p
 
-    def forward(self, inputs: Tensor, input_lengths: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, inputs: Tensor) -> Tuple[Tensor, Tensor]:
         """
         Forward propagate a `inputs` for  encoder training.
 
         Args:
             inputs (torch.FloatTensor): A input sequence passed to encoder. Typically for inputs this will be a padded
                 `FloatTensor` of size ``(batch, seq_length, dimension)``.
-            input_lengths (torch.LongTensor): The length of input tensor. ``(batch)``
 
         Returns:
             (Tensor, Tensor)
 
             * outputs (torch.FloatTensor): A output sequence of encoder. `FloatTensor` of size
                 ``(batch, seq_length, dimension)``
-            * output_lengths (torch.LongTensor): The length of output tensor. ``(batch)`` (Now should be identical to input length)
         """
         outputs = self.conv_same_length(inputs)
         outputs = self.input_projection(outputs)
@@ -201,4 +197,4 @@ class ConformerEncoder(nn.Module):
         for layer in self.layers:
             outputs = layer(outputs)
 
-        return outputs, input_lengths
+        return outputs
