@@ -149,9 +149,9 @@ class ConformerConvModule(nn.Module):
         return self.sequential(inputs).transpose(1, 2)
 
 
-class Conv2dSubampling(nn.Module):
+class Conv2dNoSubampling(nn.Module):
     """
-    Convolutional 2D subsampling (to 1/4 length)
+    Convolutional 2D subsampling (keep length unchanged)
 
     Args:
         in_channels (int): Number of channels in the input image
@@ -162,25 +162,21 @@ class Conv2dSubampling(nn.Module):
 
     Returns: outputs, output_lengths
         - **outputs** (batch, time, dim): Tensor produced by the convolution
-        - **output_lengths** (batch): list of sequence output lengths
     """
     def __init__(self, in_channels: int, out_channels: int) -> None:
-        super(Conv2dSubampling, self).__init__()
+        super(Conv2dNoSubampling, self).__init__()
         self.sequential = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=2),
+            nn.Conv2d(in_channels, out_channels, kernel_size=1),
             nn.ReLU(),
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=2),
+            nn.Conv2d(out_channels, out_channels, kernel_size=1),
             nn.ReLU(),
         )
 
-    def forward(self, inputs: Tensor, input_lengths: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, inputs: Tensor) -> Tuple[Tensor, Tensor]:
         outputs = self.sequential(inputs.unsqueeze(1))
         batch_size, channels, subsampled_lengths, sumsampled_dim = outputs.size()
 
         outputs = outputs.permute(0, 2, 1, 3)
         outputs = outputs.contiguous().view(batch_size, subsampled_lengths, channels * sumsampled_dim)
 
-        output_lengths = input_lengths >> 2
-        output_lengths -= 1
-
-        return outputs, output_lengths
+        return outputs

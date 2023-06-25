@@ -21,7 +21,7 @@ from .feed_forward import FeedForwardModule
 from .attention import MultiHeadedSelfAttentionModule
 from .convolution import (
     ConformerConvModule,
-    Conv2dSubampling,
+    Conv2dNoSubampling,
 )
 from .modules import (
     ResidualConnectionModule,
@@ -152,9 +152,9 @@ class ConformerEncoder(nn.Module):
             half_step_residual: bool = True,
     ):
         super(ConformerEncoder, self).__init__()
-        self.conv_subsample = Conv2dSubampling(in_channels=1, out_channels=encoder_dim)
+        self.conv_same_length = Conv2dNoSubampling(in_channels=1, out_channels=encoder_dim)
         self.input_projection = nn.Sequential(
-            Linear(encoder_dim * (((input_dim - 1) // 2 - 1) // 2), encoder_dim),
+            Linear(encoder_dim * input_dim, encoder_dim),
             nn.Dropout(p=input_dropout_p),
         )
         self.layers = nn.ModuleList([ConformerBlock(
@@ -193,12 +193,12 @@ class ConformerEncoder(nn.Module):
 
             * outputs (torch.FloatTensor): A output sequence of encoder. `FloatTensor` of size
                 ``(batch, seq_length, dimension)``
-            * output_lengths (torch.LongTensor): The length of output tensor. ``(batch)``
+            * output_lengths (torch.LongTensor): The length of output tensor. ``(batch)`` (Now should be identical to input length)
         """
-        outputs, output_lengths = self.conv_subsample(inputs, input_lengths)
+        outputs = self.conv_same_length(inputs)
         outputs = self.input_projection(outputs)
 
         for layer in self.layers:
             outputs = layer(outputs)
 
-        return outputs, output_lengths
+        return outputs, input_lengths
